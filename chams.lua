@@ -19,17 +19,32 @@ local ESP = {
     }
 }
 
+-- Create container for highlights
+local HighlightContainer = Instance.new("Folder")
+HighlightContainer.Name = "ChamsESPContainer"
+HighlightContainer.Parent = CoreGui
+
 local function CreateChamsESP(plr)
     if plr == Players.LocalPlayer then return end
     
-    local Highlight = Instance.new("Highlight")
-    Highlight.FillTransparency = 1
-    Highlight.OutlineTransparency = 0
-    Highlight.OutlineColor = ESP.Drawing.Chams.OutlineRGB
-    Highlight.DepthMode = ESP.Drawing.Chams.VisibleCheck and "Occluded" or "AlwaysOnTop"
+    -- Remove existing highlight if any
+    if HighlightContainer:FindFirstChild(plr.Name) then
+        HighlightContainer[plr.Name]:Destroy()
+    end
     
-    RunService.RenderStepped:Connect(function()
-        if not plr.Character then 
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = plr.Name
+    Highlight.Parent = HighlightContainer
+    
+    -- Initial setup
+    Highlight.FillTransparency = ESP.Drawing.Chams.Fill_Transparency * 0.01
+    Highlight.OutlineTransparency = ESP.Drawing.Chams.Outline_Transparency * 0.01
+    Highlight.FillColor = ESP.Drawing.Chams.FillRGB
+    Highlight.OutlineColor = ESP.Drawing.Chams.OutlineRGB
+    Highlight.Enabled = false
+
+    local connection = RunService.RenderStepped:Connect(function()
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then 
             Highlight.Enabled = false
             return 
         end
@@ -47,13 +62,12 @@ local function CreateChamsESP(plr)
 
         Highlight.Adornee = plr.Character
         Highlight.Enabled = true
-        Highlight.FillColor = ESP.Drawing.Chams.FillRGB
-        Highlight.OutlineColor = ESP.Drawing.Chams.OutlineRGB
         
+        -- Update thermal effect
         if ESP.Drawing.Chams.Thermal then
             local breathe_effect = math.atan(math.sin(tick() * 2)) * 2 / math.pi
-            Highlight.FillTransparency = ESP.Drawing.Chams.Fill_Transparency * breathe_effect * 0.01
-            Highlight.OutlineTransparency = ESP.Drawing.Chams.Outline_Transparency * breathe_effect * 0.01
+            Highlight.FillTransparency = 1 - (ESP.Drawing.Chams.Fill_Transparency * 0.01 * breathe_effect)
+            Highlight.OutlineTransparency = 1 - (ESP.Drawing.Chams.Outline_Transparency * 0.01 * breathe_effect)
         end
         
         Highlight.DepthMode = ESP.Drawing.Chams.VisibleCheck and "Occluded" or "AlwaysOnTop"
@@ -62,8 +76,21 @@ local function CreateChamsESP(plr)
     plr.CharacterRemoving:Connect(function()
         Highlight.Enabled = false
     end)
+
+    Players.PlayerRemoving:Connect(function(player)
+        if player == plr then
+            connection:Disconnect()
+            Highlight:Destroy()
+        end
+    end)
 end
 
+-- Clean up existing container if it exists
+if CoreGui:FindFirstChild("ChamsESPContainer") then
+    CoreGui:FindFirstChild("ChamsESPContainer"):Destroy()
+end
+
+-- Initialize for existing players
 for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= Players.LocalPlayer then
         CreateChamsESP(plr)
