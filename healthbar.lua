@@ -17,9 +17,9 @@ local ESP = {
             HealthTextRGB = Color3.fromRGB(119, 120, 255),
             Width = 2.5,
             Gradient = true,
-            GradientRGB1 = Color3.fromRGB(200, 0, 0),
-            GradientRGB2 = Color3.fromRGB(60, 60, 125),
-            GradientRGB3 = Color3.fromRGB(119, 120, 255)
+            GradientRGB1 = Color3.fromRGB(119, 120, 255), -- Changed to purple
+            GradientRGB2 = Color3.fromRGB(60, 60, 125),   -- Darker purple
+            GradientRGB3 = Color3.fromRGB(200, 200, 255)  -- Lighter purple
         }
     }
 }
@@ -123,6 +123,23 @@ local function CreateHealthESP(plr)
             HealthText.Visible = false
         end
     end)
+end
+
+function ESP:UpdateColors(lowColor, highColor)
+    ESP.Drawing.Healthbar.GradientRGB1 = lowColor
+    ESP.Drawing.Healthbar.GradientRGB3 = highColor
+    
+    -- Update existing healthbars
+    for _, bar in pairs(CoreGui:FindFirstChild("HealthESPHolder"):GetChildren()) do
+        if bar:IsA("Frame") and bar:FindFirstChild("UIGradient") then
+            local gradient = bar.UIGradient
+            gradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, lowColor),
+                ColorSequenceKeypoint.new(0.5, ESP.Drawing.Healthbar.GradientRGB2),
+                ColorSequenceKeypoint.new(1, highColor)
+            }
+        end
+    end
 end
 
 -- Initialize
