@@ -4,11 +4,17 @@ local UserInputService = game:GetService("UserInputService")
 
 local Aimbot = {
     Enabled = false,
+    Active = false, -- New property for when key is held
     TargetPart = "Head", -- Part to aim at
     FOV = 150, -- Field of view for target acquisition
     Smoothness = 0.5, -- Lower = faster
     TeamCheck = true,
-    VisibilityCheck = true
+    VisibilityCheck = true,
+
+    Toggle = function(self)
+        self.Active = not self.Active
+        FOVCircle.Visible = self.Active and self.Enabled
+    end
 }
 
 local Camera = workspace.CurrentCamera
@@ -76,7 +82,7 @@ end
 
 -- Main Aimbot Loop
 RunService.RenderStepped:Connect(function()
-    if not Aimbot.Enabled then 
+    if not (Aimbot.Enabled and Aimbot.Active) then 
         FOVCircle.Visible = false
         return 
     end
