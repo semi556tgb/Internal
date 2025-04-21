@@ -7,9 +7,10 @@ local Aimbot = {
     Active = false, -- Will be true while key is held
     TargetPart = "Head", -- Part to aim at
     FOV = 150, -- Field of view for target acquisition
-    Smoothness = 0.5, -- Lower = faster
+    Smoothness = 0.25, -- Lower = faster camera movement
     TeamCheck = true,
     VisibilityCheck = true,
+    Prediction = 0.165, -- Prediction multiplier for movement
 
     Toggle = function(self)
         self.Active = not self.Active
@@ -80,28 +81,38 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
--- Main Aimbot Loop
+-- Main Camlock Loop
 RunService.RenderStepped:Connect(function()
     if not (Aimbot.Enabled and Aimbot.Active) then 
-        FOVCircle.Visible = false
+        FOVCircle.Visible = Aimbot.Enabled
         return 
     end
-
-    FOVCircle.Visible = true
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     local target = GetClosestPlayer()
     if not target then return end
 
     local targetPart = target.Character[Aimbot.TargetPart]
-    local targetPos = Camera:WorldToViewportPoint(targetPart.Position)
-    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-    local aimPos = Vector2.new(targetPos.X, targetPos.Y)
     
-    mousemoverel(
-        (aimPos.X - mousePos.X) * Aimbot.Smoothness,
-        (aimPos.Y - mousePos.Y) * Aimbot.Smoothness
-    )
+    -- Calculate target position with prediction
+    local targetPos = targetPart.Position
+    local targetVel = targetPart.Velocity
+    local prediction = targetVel * Aimbot.Prediction
+    local finalPosition = targetPos + prediction
+
+    -- Calculate camera angles
+    local cameraCFrame = Camera.CFrame
+    local cameraPosition = cameraCFrame.Position
+    local targetVector = (finalPosition - cameraPosition).Unit
+    
+    -- Smooth interpolation
+    local currentCam = Camera.CFrame
+    local targetCam = CFrame.new(cameraPosition, finalPosition)
+    local smoothedCam = currentCam:Lerp(targetCam, Aimbot.Smoothness)
+    
+    -- Update camera if player is not in first person
+    if (cameraPosition - Players.LocalPlayer.Character.Head.Position).Magnitude > 1 then
+        Camera.CFrame = smoothedCam
+    end
 end)
 
 return Aimbot
