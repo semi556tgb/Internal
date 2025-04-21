@@ -2,6 +2,9 @@ local Players = cloneref(game:GetService("Players"))
 local CoreGui = game:GetService("CoreGui")
 local RunService = cloneref(game:GetService("RunService"))
 
+-- Load Dendro ESP
+local DendroESP = loadstring(game:HttpGet("YOUR_RAW_DENDRO_ESP_URL"))()
+
 local ESP = {
     Enabled = false,
     TeamCheck = false,
@@ -19,78 +22,34 @@ local ESP = {
     }
 }
 
--- Create container for highlights
-local HighlightContainer = Instance.new("Folder")
-HighlightContainer.Name = "ChamsESPContainer"
-HighlightContainer.Parent = CoreGui
-
 local function CreateChamsESP(plr)
     if plr == Players.LocalPlayer then return end
     
-    -- Remove existing highlight if any
-    if HighlightContainer:FindFirstChild(plr.Name) then
-        HighlightContainer[plr.Name]:Destroy()
-    end
+    -- Create Dendro ESP for character
+    local chamsESP = DendroESP:AddCharacter(plr.Character, "Highlight")
     
-    local Highlight = Instance.new("Highlight")
-    Highlight.Name = plr.Name
-    Highlight.Parent = HighlightContainer
+    -- Configure chams settings
+    chamsESP.FillOpacity = ESP.Drawing.Chams.Fill_Transparency * 0.01
+    chamsESP.Opacity = ESP.Drawing.Chams.Outline_Transparency * 0.01
+    chamsESP.PositiveColor = ESP.Drawing.Chams.FillRGB
+    chamsESP.NegativeColor = ESP.Drawing.Chams.OutlineRGB
     
-    -- Initial setup
-    Highlight.FillTransparency = ESP.Drawing.Chams.Fill_Transparency * 0.01
-    Highlight.OutlineTransparency = ESP.Drawing.Chams.Outline_Transparency * 0.01
-    Highlight.FillColor = ESP.Drawing.Chams.FillRGB
-    Highlight.OutlineColor = ESP.Drawing.Chams.OutlineRGB
-    Highlight.Enabled = false
-
-    local connection = RunService.RenderStepped:Connect(function()
-        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then 
-            Highlight.Enabled = false
-            return 
-        end
-
+    -- Update chams visibility
+    RunService.RenderStepped:Connect(function()
         if not ESP.Enabled or not ESP.Drawing.Chams.Enabled then
-            Highlight.Enabled = false
+            chamsESP.Enabled = false 
             return
         end
-
-        local dist = (workspace.CurrentCamera.CFrame.Position - plr.Character:GetPivot().Position).Magnitude
-        if dist > ESP.MaxDistance then
-            Highlight.Enabled = false
-            return
-        end
-
-        Highlight.Adornee = plr.Character
-        Highlight.Enabled = true
         
-        -- Update thermal effect
-        if ESP.Drawing.Chams.Thermal then
-            local breathe_effect = math.atan(math.sin(tick() * 2)) * 2 / math.pi
-            Highlight.FillTransparency = 1 - (ESP.Drawing.Chams.Fill_Transparency * 0.01 * breathe_effect)
-            Highlight.OutlineTransparency = 1 - (ESP.Drawing.Chams.Outline_Transparency * 0.01 * breathe_effect)
-        end
-        
-        Highlight.DepthMode = ESP.Drawing.Chams.VisibleCheck and "Occluded" or "AlwaysOnTop"
+        chamsESP.Enabled = true
     end)
-
+    
     plr.CharacterRemoving:Connect(function()
-        Highlight.Enabled = false
-    end)
-
-    Players.PlayerRemoving:Connect(function(player)
-        if player == plr then
-            connection:Disconnect()
-            Highlight:Destroy()
-        end
+        chamsESP:Destroy()
     end)
 end
 
--- Clean up existing container if it exists
-if CoreGui:FindFirstChild("ChamsESPContainer") then
-    CoreGui:FindFirstChild("ChamsESPContainer"):Destroy()
-end
-
--- Initialize for existing players
+-- Initialize
 for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= Players.LocalPlayer then
         CreateChamsESP(plr)
