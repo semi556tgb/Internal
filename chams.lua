@@ -2,8 +2,7 @@ local Players = cloneref(game:GetService("Players"))
 local CoreGui = game:GetService("CoreGui")
 local RunService = cloneref(game:GetService("RunService"))
 
--- Load DendroESP with correct URL
-local DendroESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/LordNahida/DendroESP/main/Source.lua"))()
+
 
 local ESP = {
     Enabled = false,
