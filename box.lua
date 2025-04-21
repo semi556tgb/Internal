@@ -273,34 +273,4 @@ Players.PlayerAdded:Connect(function(v)
     end
 end)
 
-function ESP:UpdateColors(boxColor, fillColor)
-    ESP.Drawing.Boxes.Full.RGB = boxColor
-    ESP.Drawing.Boxes.Corner.RGB = boxColor
-    ESP.Drawing.Boxes.Filled.RGB = fillColor
-    
-    -- Update existing boxes
-    for _, container in pairs(ScreenGui:GetChildren()) do
-        if container:IsA("Folder") then
-            -- Update box fill
-            local box = container:FindFirstChild("Box")
-            if box then
-                box.BackgroundColor3 = fillColor
-            end
-            
-            -- Update box outline
-            local outline = box and box:FindFirstChildOfClass("UIStroke")
-            if outline then
-                outline.Color = boxColor
-            end
-            
-            -- Update corner pieces
-            for _, corner in pairs(container:GetChildren()) do
-                if corner:IsA("Frame") and corner.Name ~= "Box" then
-                    corner.BackgroundColor3 = boxColor
-                end
-            end
-        end
-    end
-end
-
 return ESP
