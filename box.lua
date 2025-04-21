@@ -273,4 +273,20 @@ Players.PlayerAdded:Connect(function(v)
     end
 end)
 
+function ESP:UpdateColors(boxColor, fillColor)
+    ESP.Drawing.Boxes.Full.RGB = boxColor
+    ESP.Drawing.Boxes.Corner.RGB = boxColor
+    ESP.Drawing.Boxes.Filled.RGB = fillColor
+    
+    -- Update existing boxes
+    for _, box in pairs(ScreenGui:GetChildren()) do
+        if box:IsA("Frame") then
+            box.BackgroundColor3 = fillColor
+        end
+        if box:IsA("UIStroke") then
+            box.Color = boxColor
+        end
+    end
+end
+
 return ESP
