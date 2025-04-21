@@ -4,7 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Aimbot = {
     Enabled = false,
-    Active = false, -- New property for when key is held
+    Active = false, -- Will be true while key is held
     TargetPart = "Head", -- Part to aim at
     FOV = 150, -- Field of view for target acquisition
     Smoothness = 0.5, -- Lower = faster
