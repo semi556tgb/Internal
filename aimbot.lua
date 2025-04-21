@@ -1,60 +1,61 @@
-local Players = cloneref(game:GetService("Players"))
-local RunService = cloneref(game:GetService("RunService"))
-
-local Aimbot = {
-    Enabled = false,
-    Active = false,
-    TargetPart = "HumanoidRootPart",
-    Smoothness = 0.25,
-    TeamCheck = true
-}
-
-local Camera = workspace.CurrentCamera
+local Aimbot = {}
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
-local function GetClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
+local Enabled = false
+local Active = false
+local Smoothness = 0.25
+local Target = nil
 
+function Aimbot:Toggle(state)
+    Enabled = state
+end
+
+function Aimbot:SetActive(state)
+    Active = state
+    if not state then
+        Target = nil
+    end
+end
+
+function Aimbot:SetSmoothness(value)
+    Smoothness = value
+end
+
+function Aimbot:GetClosestPlayer()
+    local closest = nil
+    local shortest = math.huge
+    
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and 
-           player.Character and 
-           player.Character:FindFirstChild(Aimbot.TargetPart) and
-           player.Character:FindFirstChildOfClass("Humanoid") and
-           player.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
-            
-            if Aimbot.TeamCheck and player.Team == LocalPlayer.Team then
-                continue
-            end
-
-            local pos = player.Character[Aimbot.TargetPart].Position
-            local dist = (Camera.CFrame.Position - pos).Magnitude
-            
-            if dist < shortestDistance then
-                closestPlayer = player
-                shortestDistance = dist
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+            if dist < shortest then
+                shortest = dist
+                closest = player
             end
         end
     end
-
-    return closestPlayer
+    return closest
 end
 
 RunService.RenderStepped:Connect(function()
-    if not (Aimbot.Enabled and Aimbot.Active) then return end
-
-    local target = GetClosestPlayer()
-    if not target or not target.Character then return end
-
-    local targetPart = target.Character[Aimbot.TargetPart]
-    local targetPos = targetPart.Position
-    
-    local currentCam = Camera.CFrame
-    local targetCam = CFrame.new(currentCam.Position, targetPos)
-    local smoothedCam = currentCam:Lerp(targetCam, Aimbot.Smoothness)
-    
-    if (currentCam.Position - LocalPlayer.Character.Head.Position).Magnitude > 1 then
-        Camera.CFrame = smoothedCam
+    if Enabled and Active then
+        if not Target then
+            Target = Aimbot:GetClosestPlayer()
+        end
+        
+        if Target and Target.Character and Target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = Target.Character.HumanoidRootPart.Position
+            local camPos = workspace.CurrentCamera.CFrame
+            local newCF = camPos:Lerp(CFrame.new(camPos.Position, targetPos), Smoothness)
+            workspace.CurrentCamera.CFrame = newCF
+        end
+    else
+        Target = nil
     end
 end)
 
