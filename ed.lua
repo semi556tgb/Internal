@@ -86,6 +86,18 @@ local function CreateChamsESP(plr)
     end)
 end
 
+function ESP:UpdateColors(chamsColor)
+    ESP.Drawing.Chams.Color = chamsColor
+    
+    -- Update existing highlights
+    for _, highlight in pairs(HighlightContainer:GetChildren()) do
+        if highlight:IsA("Highlight") then
+            highlight.FillColor = chamsColor
+            highlight.OutlineColor = chamsColor
+        end
+    end
+end
+
 -- Cleanup on script stop
 local cleanupConnection
 cleanupConnection = game:GetService("CoreGui").ChildRemoved:Connect(function(child)
