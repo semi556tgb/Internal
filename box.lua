@@ -31,45 +31,37 @@ local Box = {
                 RGB = Color3.fromRGB(255, 255, 255),
             },
         }
-    }
+    },
+    Connections = {
+        RunService = cloneref(game:GetService("RunService"))
+    },
+    Fonts = {}
 }
 
 function Box.Init()
-    local RunService = cloneref(game:GetService("RunService"))
+    local RunService = Box.Connections.RunService
     local Players = cloneref(game:GetService("Players"))
     local CoreGui = game:GetService("CoreGui")
     local Workspace = cloneref(game:GetService("Workspace"))
-    
-    local Functions = {}
-    
-    function Functions:Create3DLine()
-        local line = Drawing.new("Line")
-        line.Visible = false
-        line.Thickness = 1
-        line.Transparency = 1
-        return line
+    local lplayer = Players.LocalPlayer
+    local Cam = Workspace.CurrentCamera
+    local RotationAngle, Tick = -45, tick()
+
+    -- Load functions from GitHub
+    local success, Functions = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/semi556tgb/Internal/refs/heads/main/box.lua"))()
+    end)
+
+    if not success then
+        warn("Failed to load ESP functions from GitHub:", Functions)
+        return false
     end
 
-    function Functions:GetHealth(character)
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            return humanoid.Health, humanoid.MaxHealth
-        end
-        return 0, 0
-    end
-
-    function Functions:IsAlive(character)
-        local humanoid = character:FindFirstChild("Humanoid")
-        return humanoid and humanoid.Health > 0
-    end
-
-    function Functions:GetDistanceFromCharacter(position)
-        local localPlayer = Players.LocalPlayer
-        if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            return (localPlayer.Character.HumanoidRootPart.Position - position).Magnitude
-        end
-        return math.huge
-    end
+    -- Initialize ESP with loaded functions
+    local ScreenGui = Functions:Create("ScreenGui", {
+        Parent = CoreGui,
+        Name = "ESPHolder",
+    })
 
     local ESP_Handler = {}
     ESP_Handler.__index = ESP_Handler
@@ -79,10 +71,10 @@ function Box.Init()
         self.Player = player
         self.Character = player.Character
         self.Lines = {
-            Top = Functions:Create3DLine(),
-            Bottom = Functions:Create3DLine(),
-            Left = Functions:Create3DLine(),
-            Right = Functions:Create3DLine()
+            Top = Functions:Create("Line", {Visible = false, Thickness = 1, Transparency = 1}),
+            Bottom = Functions:Create("Line", {Visible = false, Thickness = 1, Transparency = 1}),
+            Left = Functions:Create("Line", {Visible = false, Thickness = 1, Transparency = 1}),
+            Right = Functions:Create("Line", {Visible = false, Thickness = 1, Transparency = 1})
         }
         self.Connections = {}
         
