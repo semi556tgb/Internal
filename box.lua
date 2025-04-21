@@ -75,6 +75,12 @@ local lplayer = Players.LocalPlayer
 local Cam = Workspace.CurrentCamera
 local RotationAngle, Tick = -45, tick()
 
+-- Add update delay to reduce detection
+local _rand = Random.new()
+local _lastUpdate = tick()
+local _updateDelay = 0.03 -- 30ms delay between updates
+local _jitterRange = 0.01 -- Add small random delay
+
 local function DupeCheck(plr)
     if ScreenGui:FindFirstChild(plr.Name) then
         ScreenGui[plr.Name]:Destroy()
@@ -146,28 +152,38 @@ local function ESP_Handler(plr)
             end
         end
 
-        Connection = RunService.RenderStepped:Connect(function()
-            if not Container or not Container.Parent then 
-                if Connection then Connection:Disconnect() end
-                return
+        Connection = RunService.Heartbeat:Connect(function() -- Use Heartbeat instead of RenderStepped
+            local _now = tick()
+            if _now - _lastUpdate < _updateDelay + _rand:NextNumber(-_jitterRange, _jitterRange) then 
+                return 
             end
+            _lastUpdate = _now
 
-            if not ESP.Enabled or not plr or not plr.Parent or not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then
+            -- Cache character reference
+            local _char = plr.Character
+            if not _char then return end
+            
+            local _root = _char:FindFirstChild("HumanoidRootPart")
+            if not _root then return end
+
+            -- Use less detectable position calculation
+            local _pos = _root.CFrame.Position
+            local _cam = Cam.CFrame
+            local _dist = (_cam.Position - _pos).Magnitude
+            
+            if _dist > ESP.MaxDistance then
                 HideESP()
                 return
             end
 
-            local HRP = plr.Character.HumanoidRootPart
-            local Pos, OnScreen = Cam:WorldToScreenPoint(HRP.Position)
+            local _screen, _onScreen = Cam.WorldToScreenPoint(Cam, _pos)
 
-            if not OnScreen then
+            if not _onScreen then
                 HideESP()
                 return
             end
 
-            local Dist = (Cam.CFrame.Position - HRP.Position).Magnitude / 3.5714285714
-
-            local shouldDrawBoxes = OnScreen and Dist <= ESP.MaxDistance and 
+            local shouldDrawBoxes = _onScreen and _dist <= ESP.MaxDistance and 
                 (not ESP.TeamCheck or plr ~= lplayer and (not plr.Team or not lplayer.Team or plr.Team ~= lplayer.Team))
 
             -- Update visibility
@@ -178,49 +194,49 @@ local function ESP_Handler(plr)
 
             if shouldDrawBoxes then
                 if ESP.FadeOut.OnDistance then
-                    Functions:FadeOutOnDist(Box, Dist)
-                    Functions:FadeOutOnDist(Outline, Dist)
+                    Functions:FadeOutOnDist(Box, _dist)
+                    Functions:FadeOutOnDist(Outline, _dist)
                     for _, corner in pairs(CornerPieces) do
-                        Functions:FadeOutOnDist(corner, Dist)
+                        Functions:FadeOutOnDist(corner, _dist)
                     end
                 end
 
-                local Size = HRP.Size.Y
-                local scaleFactor = (Size * Cam.ViewportSize.Y) / (Pos.Z * 2)
+                local Size = _root.Size.Y
+                local scaleFactor = (Size * Cam.ViewportSize.Y) / (_screen.Z * 2)
                 local w, h = 3 * scaleFactor, 4.5 * scaleFactor
 
                 -- Update corner positions
-                CornerPieces.LeftTop.Position = UDim2.new(0, Pos.X - w/2, 0, Pos.Y - h/2)
+                CornerPieces.LeftTop.Position = UDim2.new(0, _screen.X - w/2, 0, _screen.Y - h/2)
                 CornerPieces.LeftTop.Size = UDim2.new(0, w/5, 0, 1)
 
-                CornerPieces.LeftSide.Position = UDim2.new(0, Pos.X - w/2, 0, Pos.Y - h/2)
+                CornerPieces.LeftSide.Position = UDim2.new(0, _screen.X - w/2, 0, _screen.Y - h/2)
                 CornerPieces.LeftSide.Size = UDim2.new(0, 1, 0, h/5)
 
-                CornerPieces.BottomSide.Position = UDim2.new(0, Pos.X - w/2, 0, Pos.Y + h/2)
+                CornerPieces.BottomSide.Position = UDim2.new(0, _screen.X - w/2, 0, _screen.Y + h/2)
                 CornerPieces.BottomSide.Size = UDim2.new(0, 1, 0, h/5)
                 CornerPieces.BottomSide.AnchorPoint = Vector2.new(0, 5)
 
-                CornerPieces.BottomDown.Position = UDim2.new(0, Pos.X - w/2, 0, Pos.Y + h/2)
+                CornerPieces.BottomDown.Position = UDim2.new(0, _screen.X - w/2, 0, _screen.Y + h/2)
                 CornerPieces.BottomDown.Size = UDim2.new(0, w/5, 0, 1)
                 CornerPieces.BottomDown.AnchorPoint = Vector2.new(0, 1)
 
-                CornerPieces.RightTop.Position = UDim2.new(0, Pos.X + w/2, 0, Pos.Y - h/2)
+                CornerPieces.RightTop.Position = UDim2.new(0, _screen.X + w/2, 0, _screen.Y - h/2)
                 CornerPieces.RightTop.Size = UDim2.new(0, w/5, 0, 1)
                 CornerPieces.RightTop.AnchorPoint = Vector2.new(1, 0)
 
-                CornerPieces.RightSide.Position = UDim2.new(0, Pos.X + w/2 - 1, 0, Pos.Y - h/2)
+                CornerPieces.RightSide.Position = UDim2.new(0, _screen.X + w/2 - 1, 0, _screen.Y - h/2)
                 CornerPieces.RightSide.Size = UDim2.new(0, 1, 0, h/5)
 
-                CornerPieces.BottomRightSide.Position = UDim2.new(0, Pos.X + w/2, 0, Pos.Y + h/2)
+                CornerPieces.BottomRightSide.Position = UDim2.new(0, _screen.X + w/2, 0, _screen.Y + h/2)
                 CornerPieces.BottomRightSide.Size = UDim2.new(0, 1, 0, h/5)
                 CornerPieces.BottomRightSide.AnchorPoint = Vector2.new(1, 1)
 
-                CornerPieces.BottomRightDown.Position = UDim2.new(0, Pos.X + w/2, 0, Pos.Y + h/2)
+                CornerPieces.BottomRightDown.Position = UDim2.new(0, _screen.X + w/2, 0, _screen.Y + h/2)
                 CornerPieces.BottomRightDown.Size = UDim2.new(0, w/5, 0, 1)
                 CornerPieces.BottomRightDown.AnchorPoint = Vector2.new(1, 1)
 
                 -- Update box
-                Box.Position = UDim2.new(0, Pos.X - w/2, 0, Pos.Y - h/2)
+                Box.Position = UDim2.new(0, _screen.X - w/2, 0, _screen.Y - h/2)
                 Box.Size = UDim2.new(0, w, 0, h)
 
                 if ESP.Drawing.Boxes.Filled.Enabled then
@@ -262,14 +278,18 @@ end
 
 for _, v in pairs(Players:GetPlayers()) do
     if v ~= lplayer then
-        coroutine.wrap(ESP_Handler)(v)
+        pcall(function()
+            coroutine.wrap(ESP_Handler)(v)
+        end)
     end
 end
 
 -- Handle new players
 Players.PlayerAdded:Connect(function(v)
     if v ~= lplayer then
-        coroutine.wrap(ESP_Handler)(v)
+        pcall(function()
+            coroutine.wrap(ESP_Handler)(v)
+        end)
     end
 end)
 
